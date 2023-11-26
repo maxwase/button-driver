@@ -26,7 +26,6 @@ cfg-if = "1.0.0"
 parking_lot = "0.12.1"
 
 [features]
-default = ["std"]
 esp = ["dep:esp-idf-hal"]
 embassy = ["dep:embassy-time"]
 embedded_hal = ["dep:embedded-hal", "embedded-hal/unproven"]
