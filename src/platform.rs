@@ -6,14 +6,13 @@ pub trait Platform {
     fn duration_since_init(&self) -> Duration;
 }
 
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {
         pub(crate) use std_platform::DefaultPlatform;
     } else if #[cfg(feature = "embassy")] {
         pub(crate) use embassy_platform::DefaultPlatform;
     } else {
-        compile_error!("unsupport error")
+        pub(crate) use unsupported_platform::DefaultPlatform;
     }
 }
 
@@ -63,6 +62,25 @@ mod embassy_platform {
     impl Platform for DefaultPlatform {
         fn duration_since_init(&self) -> Duration {
             return (Instant::now() - self.start).into();
+        }
+    }
+}
+
+mod unsupported_platform {
+    use core::time::Duration;
+
+    use super::Platform;
+    pub struct DefaultPlatform {}
+
+    impl Default for DefaultPlatform {
+        fn default() -> Self {
+            unimplemented!("unsupported platform, you can use Button::new_with_platform() to implement custom platform")
+        }
+    }
+
+    impl Platform for DefaultPlatform {
+        fn duration_since_init(&self) -> Duration {
+            unimplemented!("unsupported platform, you can use Button::new_with_platform() to implement custom platform")
         }
     }
 }
