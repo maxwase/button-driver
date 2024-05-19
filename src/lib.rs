@@ -7,7 +7,7 @@ use core::time::Duration;
 
 pub use config::{ButtonConfig, Mode};
 pub use pin_wrapper::PinWrapper;
-pub use platform::Platform;
+pub use platform::{Platform, DefaultPlatform};
 
 /// Button configuration.
 mod config;
