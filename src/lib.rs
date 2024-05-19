@@ -279,7 +279,6 @@ impl<Pin: PinWrapper, Platform: platform::Platform> Button<Pin, Platform> {
     fn elapsed(&self, t: Duration) -> Duration {
         self.platform.duration_since_init() - t
     }
-    
     fn now(&self) -> Duration {
         self.platform.duration_since_init()
     }
