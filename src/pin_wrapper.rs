@@ -44,7 +44,7 @@ pub(crate) mod tests {
             Arc,
         },
         thread::sleep,
-        time::Duration,
+        time::{Duration, Instant},
     };
 
     use crate::{Button, ButtonConfig, Mode, PinWrapper, State};
@@ -65,7 +65,7 @@ pub(crate) mod tests {
         }
     }
 
-    impl Button<MockPin> {
+    impl Button<MockPin, Instant> {
         pub fn press_button(&mut self) {
             self.pin.press();
             self.tick();
