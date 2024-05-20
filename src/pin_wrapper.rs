@@ -44,12 +44,12 @@ pub(crate) mod tests {
             Arc,
         },
         thread::sleep,
-        time::Duration,
+        time::{Duration, Instant},
     };
 
     use crate::{Button, ButtonConfig, Mode, PinWrapper, State};
 
-    pub const CONFIG: ButtonConfig = ButtonConfig {
+    pub const CONFIG: ButtonConfig<Duration> = ButtonConfig {
         hold: Duration::from_millis(500),
         debounce: Duration::from_micros(700),
         release: Duration::from_millis(30),
@@ -65,7 +65,7 @@ pub(crate) mod tests {
         }
     }
 
-    impl Button<MockPin> {
+    impl Button<MockPin, Instant, Duration> {
         pub fn press_button(&mut self) {
             self.pin.press();
             self.tick();
