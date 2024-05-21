@@ -47,11 +47,11 @@ pub(crate) mod tests {
         time::{Duration, Instant},
     };
 
-    use crate::{Button, ButtonConfig, Mode, PinWrapper, State};
+    use crate::{debounce::TimeBased, Button, ButtonConfig, Mode, PinWrapper, State};
 
     pub const CONFIG: ButtonConfig<Duration> = ButtonConfig {
         hold: Duration::from_millis(500),
-        debounce: Duration::from_micros(700),
+        debounce_strategy: TimeBased::new(Duration::from_micros(700)),
         release: Duration::from_millis(30),
         mode: Mode::PullDown,
     };
@@ -71,7 +71,7 @@ pub(crate) mod tests {
             self.tick();
             assert!(matches!(self.state, State::Down(_)));
 
-            sleep(CONFIG.debounce);
+            sleep(*CONFIG.debounce_strategy.debounce());
             self.tick();
         }
 
@@ -84,12 +84,12 @@ pub(crate) mod tests {
     impl MockPin {
         pub fn press(&self) {
             self.0.store(true, Ordering::SeqCst);
-            sleep(CONFIG.debounce);
+            sleep(*CONFIG.debounce_strategy.debounce());
         }
 
         pub fn release(&self) {
             self.0.store(false, Ordering::SeqCst);
-            sleep(CONFIG.debounce);
+            sleep(*CONFIG.debounce_strategy.debounce());
         }
 
         pub fn click(&self) {

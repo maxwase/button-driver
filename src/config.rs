@@ -1,5 +1,7 @@
 use core::time::Duration;
 
+use crate::debounce::TimeBased;
+
 /// Default debounce time for a button.
 pub const DEFAULT_DEBOUNCE: Duration = Duration::from_micros(900);
 /// Default release time for a button.
@@ -9,9 +11,9 @@ pub const DEFAULT_HOLD: Duration = Duration::from_millis(500);
 
 /// Various [Button] parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ButtonConfig<D> {
+pub struct ButtonConfig<D, S = TimeBased<D>> {
     /// How much time the button should be pressed to in order to count it as a press.
-    pub debounce: D,
+    pub debounce_strategy: S,
     /// How much time the button should not be holed to be released.
     pub release: D,
     /// How much time the button should be pressed to be held.
@@ -20,13 +22,13 @@ pub struct ButtonConfig<D> {
     pub mode: Mode,
 }
 
-impl<D> ButtonConfig<D> {
+impl<D, S> ButtonConfig<D, S> {
     /// Returns new [ButtonConfig].
     ///
     /// As a general rule, `debounce` time is less then `release` time and `hold` time is larger them both.
-    pub fn new(debounce: D, release: D, hold: D, mode: Mode) -> Self {
+    pub fn new(debounce: S, release: D, hold: D, mode: Mode) -> Self {
         Self {
-            debounce,
+            debounce_strategy: debounce,
             release,
             hold,
             mode,
@@ -38,7 +40,7 @@ impl<D> ButtonConfig<D> {
 impl Default for ButtonConfig<Duration> {
     fn default() -> Self {
         Self {
-            debounce: DEFAULT_DEBOUNCE,
+            debounce_strategy: TimeBased::new(DEFAULT_DEBOUNCE),
             release: DEFAULT_RELEASE,
             hold: DEFAULT_HOLD,
             mode: Mode::default(),
@@ -52,7 +54,9 @@ impl Default for ButtonConfig<embassy_time::Duration> {
         use embassy_time::Duration;
         // `as` is safe here because these contacts won't exceed `u64` limit
         Self {
-            debounce: Duration::from_micros(DEFAULT_DEBOUNCE.as_micros() as u64),
+            debounce_strategy: TimeBased::new(Duration::from_micros(
+                DEFAULT_DEBOUNCE.as_micros() as u64
+            )),
             release: Duration::from_millis(DEFAULT_RELEASE.as_millis() as u64),
             hold: Duration::from_millis(DEFAULT_HOLD.as_millis() as u64),
             mode: Mode::default(),

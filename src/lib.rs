@@ -3,11 +3,14 @@
 #![cfg_attr(all(feature = "embassy", not(feature = "std")), no_std)]
 
 pub use config::{ButtonConfig, Mode};
+use debounce::{DebounceStrategy, TimeBased};
 pub use instant::InstantProvider;
 pub use pin_wrapper::PinWrapper;
 
 /// Button configuration.
 pub mod config;
+/// Debounce abstraction with default strategies.
+pub mod debounce;
 mod instant;
 /// Wrappers for different APIs.
 mod pin_wrapper;
@@ -20,13 +23,13 @@ mod tests;
 /// The crate is designed to provide a finished ([`released`](ButtonConfig#structfield.release)) state by the accessor methods.
 /// However, it is also possible to get the `raw` state using the corresponding methods.
 #[derive(Clone, Debug)]
-pub struct Button<P, I, D> {
+pub struct Button<P, I, D, S = TimeBased<D>> {
     /// An inner pin.
     pub pin: P,
     state: State<I>,
     clicks: usize,
     held: Option<D>,
-    config: ButtonConfig<D>,
+    config: ButtonConfig<D, S>,
 }
 
 /// Represents current button state.
@@ -89,9 +92,15 @@ impl<I: PartialEq> State<I> {
     }
 }
 
-impl<P: PinWrapper, I: InstantProvider<D> + PartialEq, D: Clone + Ord> Button<P, I, D> {
+impl<P, I, D, S> Button<P, I, D, S>
+where
+    P: PinWrapper,
+    I: InstantProvider<D> + PartialEq,
+    D: Clone + Ord,
+    S: DebounceStrategy<P, I, D>,
+{
     /// Creates a new [Button].
-    pub const fn new(pin: P, config: ButtonConfig<D>) -> Self {
+    pub const fn new(pin: P, config: ButtonConfig<D, S>) -> Self {
         Self {
             pin,
             config,
@@ -189,7 +198,7 @@ impl<P: PinWrapper, I: InstantProvider<D> + PartialEq, D: Clone + Ord> Button<P,
 
             State::Down(elapsed) => {
                 if self.is_pin_pressed() {
-                    if elapsed.elapsed() >= self.config.debounce {
+                    if self.is_debounced() {
                         self.state = State::Pressed(elapsed.clone());
                     } else {
                         // debounce
@@ -218,6 +227,7 @@ impl<P: PinWrapper, I: InstantProvider<D> + PartialEq, D: Clone + Ord> Button<P,
                     } else {
                         // waiting for the release timeout
                     }
+                    // TODO: `Up` debounce?
                 } else {
                     self.state = State::Released;
                 }
@@ -244,5 +254,10 @@ impl<P: PinWrapper, I: InstantProvider<D> + PartialEq, D: Clone + Ord> Button<P,
     /// Reads current pin status, returns [true] if the button pin is pressed without debouncing.
     fn is_pin_pressed(&self) -> bool {
         !self.is_pin_released()
+    }
+
+    /// Returns [true] if the button press is considered debounced.
+    pub fn is_debounced(&self) -> bool {
+        self.config.debounce_strategy.is_debounced(self)
     }
 }
