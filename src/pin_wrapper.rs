@@ -47,7 +47,7 @@ pub(crate) mod tests {
         time::Duration,
     };
 
-    use crate::{Button, ButtonConfig, Mode, PinWrapper, State};
+    use crate::{platform::DefaultPlatform, Button, ButtonConfig, Mode, PinWrapper, State};
 
     pub const CONFIG: ButtonConfig = ButtonConfig {
         hold: Duration::from_millis(500),
@@ -65,7 +65,7 @@ pub(crate) mod tests {
         }
     }
 
-    impl Button<MockPin> {
+    impl Button<MockPin, DefaultPlatform> {
         pub fn press_button(&mut self) {
             self.pin.press();
             self.tick();

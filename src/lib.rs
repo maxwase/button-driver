@@ -2,26 +2,20 @@
 #![warn(missing_docs)]
 #![cfg_attr(all(feature = "embassy", not(feature = "std")), no_std)]
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "std")] {
-        use std::time::{Duration, Instant};
-    } else if #[cfg(feature = "embassy")] {
-        use embassy_time::{Duration, Instant};
-    } else {
-        use core::time::Duration;
-        compile_error!("No `Instant` provider selected");
-    }
-}
-
 use core::fmt::{self, Debug};
+use core::time::Duration;
 
 pub use config::{ButtonConfig, Mode};
 pub use pin_wrapper::PinWrapper;
+pub use platform::{Platform, DefaultPlatform};
 
 /// Button configuration.
 mod config;
 /// Wrappers for different APIs.
 mod pin_wrapper;
+
+// Platform special deps
+mod platform;
 
 #[cfg(all(test, feature = "std"))]
 mod tests;
@@ -30,16 +24,17 @@ mod tests;
 ///
 /// The crate is designed to provide a finished ([`released`](ButtonConfig#structfield.release)) state by the accessor methods.
 /// However, it is also possible to get `raw` state using the corresponding methods.
-pub struct Button<P> {
+pub struct Button<Pin, Platform> {
     /// An inner pin.
-    pub pin: P,
+    pub pin: Pin,
     state: State,
     clicks: usize,
     held: Option<Duration>,
     config: ButtonConfig,
+    platform: Platform,
 }
 
-impl<P: Clone> Clone for Button<P> {
+impl<Pin: Clone, Platform: Clone> Clone for Button<Pin, Platform> {
     fn clone(&self) -> Self {
         Self {
             pin: self.pin.clone(),
@@ -47,10 +42,11 @@ impl<P: Clone> Clone for Button<P> {
             state: self.state,
             clicks: self.clicks,
             held: self.held,
+            platform: self.platform.clone(),
         }
     }
 }
-impl<P: Debug> Debug for Button<P> {
+impl<Pin: Debug, Platform> Debug for Button<Pin, Platform> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Button")
             .field("pin", &self.pin)
@@ -77,13 +73,13 @@ impl<P: Debug> Debug for Button<P> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     /// The button has been just pressed, so it is in *down* position.
-    Down(Instant),
+    Down(Duration),
     /// Debounced press.
-    Pressed(Instant),
+    Pressed(Duration),
     /// The button has been just released, so it is in *up* position.
-    Up(Instant),
+    Up(Duration),
     /// The button is being held.
-    Held(Instant),
+    Held(Duration),
     /// Fully released state, idle.
     Released,
     /// Initial state.
@@ -122,15 +118,16 @@ impl State {
     }
 }
 
-impl<P: PinWrapper> Button<P> {
-    /// Creates a new [Button].
-    pub const fn new(pin: P, config: ButtonConfig) -> Self {
+impl<Pin: PinWrapper, Platform: platform::Platform> Button<Pin, Platform> {
+    /// Creates a new [Button] with special platform.
+    pub fn new_with_platform(pin: Pin, platform: Platform, config: ButtonConfig) -> Self {
         Self {
             pin,
             config,
             state: State::Unknown,
             clicks: 0,
             held: None,
+            platform: platform,
         }
     }
 
@@ -194,7 +191,7 @@ impl<P: PinWrapper> Button<P> {
     /// Returns [None] if the button is not being held.
     pub fn current_holding_time(&self) -> Option<Duration> {
         if let State::Held(dur) = self.state {
-            Some(dur.elapsed())
+            Some(self.platform.duration_since_init() - dur)
         } else {
             None
         }
@@ -216,13 +213,13 @@ impl<P: PinWrapper> Button<P> {
         match self.state {
             State::Unknown if self.is_pin_pressed() => {
                 self.clicks = 1;
-                self.state = State::Down(Instant::now());
+                self.state = State::Down(self.now());
             }
             State::Unknown if self.is_pin_released() => self.state = State::Released,
 
             State::Down(elapsed) => {
                 if self.is_pin_pressed() {
-                    if elapsed.elapsed() >= self.config.debounce {
+                    if self.elapsed(elapsed) >= self.config.debounce {
                         self.state = State::Pressed(elapsed);
                     } else {
                         // debounce
@@ -233,21 +230,21 @@ impl<P: PinWrapper> Button<P> {
             }
             State::Pressed(elapsed) => {
                 if self.is_pin_pressed() {
-                    if elapsed.elapsed() >= self.config.hold {
+                    if self.elapsed(elapsed) >= self.config.hold {
                         self.clicks = 0;
                         self.state = State::Held(elapsed);
                     } else {
                         // holding
                     }
                 } else {
-                    self.state = State::Up(Instant::now())
+                    self.state = State::Up(self.now())
                 }
             }
             State::Up(elapsed) => {
-                if elapsed.elapsed() < self.config.release {
+                if self.elapsed(elapsed) < self.config.release {
                     if self.is_pin_pressed() {
                         self.clicks += 1;
-                        self.state = State::Down(Instant::now());
+                        self.state = State::Down(self.now());
                     } else {
                         // waiting for the release timeout
                     }
@@ -259,10 +256,10 @@ impl<P: PinWrapper> Button<P> {
             State::Released if self.is_pin_pressed() => {
                 self.clicks = 1;
                 self.held = None;
-                self.state = State::Down(Instant::now());
+                self.state = State::Down(self.now());
             }
             State::Held(elapsed) if self.is_pin_released() => {
-                self.held = Some(elapsed.elapsed());
+                self.held = Some(self.elapsed(elapsed));
                 self.state = State::Released;
             }
             _ => {}
@@ -277,5 +274,19 @@ impl<P: PinWrapper> Button<P> {
     /// Reads current pin status, returns [true] if the button pin is pressed without debouncing.
     fn is_pin_pressed(&self) -> bool {
         !self.is_pin_released()
+    }
+
+    fn elapsed(&self, t: Duration) -> Duration {
+        self.platform.duration_since_init() - t
+    }
+    fn now(&self) -> Duration {
+        self.platform.duration_since_init()
+    }
+}
+
+impl<Pin: PinWrapper> Button<Pin, platform::DefaultPlatform> {
+    /// Creates a new [Button] with DefaultPlatform.
+    pub fn new(pin: Pin, config: ButtonConfig) -> Self {
+        Self::new_with_platform(pin, platform::DefaultPlatform::default(), config)
     }
 }
