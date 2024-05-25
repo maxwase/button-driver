@@ -1,6 +1,7 @@
 use std::{
     sync::Arc,
     thread::{sleep, spawn},
+    time::{Duration, Instant},
 };
 
 use parking_lot::Mutex;
@@ -50,7 +51,7 @@ fn test_sequential() {
 fn test_thread() {
     let pin = MockPin::default();
 
-    let button = Arc::new(Mutex::new(Button::new(pin.clone(), CONFIG)));
+    let button = Arc::new(Mutex::new(Button::<_, Instant>::new(pin.clone(), CONFIG)));
 
     let button1 = button.clone();
     spawn(move || loop {
