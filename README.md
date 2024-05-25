@@ -8,7 +8,9 @@ It offers various usage scenarios, supports ESP, `embedded_hal`, `embassy` and `
 
 This crate aims to be as flexible as possible to support various HALs and use-cases.
 
-## Example
+## Examples
+
+For more examples consider looking into the [examples](https://github.com/maxwase/button-driver/tree/master/examples) folder.
 
 For **ESP32C3** with std:
 
@@ -50,8 +52,7 @@ fn main() -> Result<(), EspError> {
 
 ## TODO
 1. `embassy` `async` [support](https://github.com/maxwase/button-driver/issues/1)
-2. External timing [interface](https://github.com/maxwase/button-driver/issues/2)
-3. `no_std` ESP32 [support](https://github.com/maxwase/button-driver/issues/2)
+2. `no_std` ESP32 [support](https://github.com/maxwase/button-driver/issues/2)
 
 ## Algorithm
 High level state-machine diagram

@@ -1,0 +1,16 @@
+[package]
+name = "stm32"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.0"
+button-driver = { path = "../../", features = ["embedded_hal_old"]}
+rtt-target = "0.5.0"
+panic-halt = "0.2.0"
+
+[dependencies.stm32f1xx-hal]
+version = "0.10.0"
+features = ["rt", "stm32f103", "medium"]

@@ -4,35 +4,45 @@ use esp_idf_hal::gpio::{Input, InputOutput, Pin, PinDriver};
 /// An abstraction over different switching APIs.
 pub trait PinWrapper {
     /// Is source on?
-    fn is_high(&self) -> bool;
+    fn is_high(&mut self) -> bool;
 
     /// Is source off?
-    fn is_low(&self) -> bool {
+    fn is_low(&mut self) -> bool {
         !self.is_high()
     }
 }
 
 #[cfg(feature = "esp")]
 impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, Input> {
-    fn is_high(&self) -> bool {
+    fn is_high(&mut self) -> bool {
         self.is_high()
     }
 }
 
 #[cfg(feature = "esp")]
 impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, InputOutput> {
-    fn is_high(&self) -> bool {
+    fn is_high(&mut self) -> bool {
         self.is_high()
+    }
+}
+
+#[cfg(feature = "embedded_hal_old")]
+impl<P> PinWrapper for P
+where
+    Self: embedded_hal_old::digital::v2::InputPin,
+{
+    fn is_high(&mut self) -> bool {
+        embedded_hal_old::digital::v2::InputPin::is_high(self).unwrap_or_default()
     }
 }
 
 #[cfg(feature = "embedded_hal")]
 impl<P> PinWrapper for P
 where
-    Self: embedded_hal::digital::v2::InputPin,
+    Self: embedded_hal::digital::InputPin,
 {
-    fn is_high(&self) -> bool {
-        self.is_high().unwrap_or_default()
+    fn is_high(&mut self) -> bool {
+        embedded_hal::digital::InputPin::is_high(self).unwrap_or_default()
     }
 }
 
@@ -60,7 +70,7 @@ pub(crate) mod tests {
     pub struct MockPin(Arc<AtomicBool>);
 
     impl PinWrapper for MockPin {
-        fn is_high(&self) -> bool {
+        fn is_high(&mut self) -> bool {
             self.0.load(Ordering::SeqCst)
         }
     }
