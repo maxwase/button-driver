@@ -1,6 +1,6 @@
 [package]
 name = "button-driver"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 authors = ["maxwase", "Max T <max.vvase@gmail.com>"]
 description = "Advanced button handling crate"
@@ -19,7 +19,8 @@ features = ["std"]
 [dependencies]
 esp-idf-hal = { version = "0.43.1", optional = true }
 embassy-time = { version = "0.3.0", optional = true }
-embedded-hal = { version = "0.2.7", optional = true }
+embedded-hal-old = { package = "embedded-hal", version = "0.2.7", optional = true }
+embedded-hal = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
 parking_lot = "0.12.2"
@@ -27,5 +28,6 @@ parking_lot = "0.12.2"
 [features]
 esp = ["dep:esp-idf-hal"]
 embassy = ["dep:embassy-time"]
-embedded_hal = ["dep:embedded-hal", "embedded-hal/unproven"]
+embedded_hal_old = ["dep:embedded-hal-old", "embedded-hal-old/unproven"]
+embedded_hal = ["dep:embedded-hal"]
 std = []

@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-#![cfg_attr(all(feature = "embassy", not(feature = "std")), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::time::Duration;
 
@@ -188,7 +188,7 @@ where
     /// Updates button state.
     /// Call as frequently as you can, ideally in a loop in separate thread or interrupt.
     pub fn tick(&mut self) {
-        match &self.state {
+        match self.state.clone() {
             State::Unknown if self.is_pin_pressed() => {
                 self.clicks = 1;
                 self.state = State::Down(I::now());
@@ -245,12 +245,12 @@ where
     }
 
     /// Reads current pin status, returns [true] if the button pin is released without debouncing.
-    fn is_pin_released(&self) -> bool {
+    fn is_pin_released(&mut self) -> bool {
         self.pin.is_high() == self.config.mode.is_pullup()
     }
 
     /// Reads current pin status, returns [true] if the button pin is pressed without debouncing.
-    fn is_pin_pressed(&self) -> bool {
+    fn is_pin_pressed(&mut self) -> bool {
         !self.is_pin_released()
     }
 }

@@ -20,11 +20,25 @@ jobs:
       run: cargo fmt --check
 
     - name: Clippy std
-      run: cargo clippy --features std
+      run: cargo clippy --features std --tests -- -D warnings
     - name: Clippy embassy
-      run: cargo clippy --features embassy
+      run: cargo clippy --features embassy -- -D warnings
+    - name: Clippy embedded_hal
+      run: |
+        cargo clippy --features embedded_hal -- -D warnings
+        cargo clippy --features embedded_hal_old -- -D warnings
     - name: Clippy default
-      run: cargo clippy --no-default-features
+      run: cargo clippy --no-default-features -- -D warnings
+
+    - name: Install dependencies
+      run: rustup target add thumbv7m-none-eabi
+
+    - name: Clippy example stm32
+      working-directory: examples/stm32
+      run: cargo clippy -- -D warnings
+    - name: Clippy example stm32-embassy
+      working-directory: examples/stm32-embassy
+      run: cargo clippy -- -D warnings
 
     - name: Tests
       run: cargo test test --features std
