@@ -11,6 +11,7 @@ This crate aims to be as flexible as possible to support various HALs and use-ca
 ## Examples
 
 For more examples consider looking into the [examples](https://github.com/maxwase/button-driver/tree/master/examples) folder.
+You can easily flash them using `cargo run` command!
 
 For **ESP32C3** with std:
 
@@ -51,8 +52,8 @@ fn main() -> Result<(), EspError> {
 ```
 
 ## TODO
-1. `embassy` `async` [support](https://github.com/maxwase/button-driver/issues/1)
-2. `no_std` ESP32 [support](https://github.com/maxwase/button-driver/issues/2)
+1. `async` [support](https://github.com/maxwase/button-driver/issues/1)
+2. Debounce strategies [support](https://github.com/maxwase/button-driver/issues/12)
 
 ## Algorithm
 High level state-machine diagram

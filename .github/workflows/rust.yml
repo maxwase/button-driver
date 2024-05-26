@@ -36,6 +36,9 @@ jobs:
     - name: Clippy example stm32
       working-directory: examples/stm32
       run: cargo clippy -- -D warnings
+    - name: Clippy example stm32-embassy
+      working-directory: examples/stm32-embassy
+      run: cargo clippy -- -D warnings
 
     - name: Tests
       run: cargo test test --features std

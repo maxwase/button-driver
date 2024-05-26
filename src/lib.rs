@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-#![cfg_attr(any(feature = "embassy", not(feature = "std")), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::time::Duration;
 

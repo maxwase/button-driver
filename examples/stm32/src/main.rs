@@ -1,5 +1,5 @@
-//! An example on how to define an external `Instant` for the `Button` using an interrupt. Typically you would
-//! prefer to use a `DWT`, `stm32f1xx_hal` even has one, however this example aims to be more general.
+//! An example of how to define an external `Instant` for the `Button` using an interrupt. Typically, you would
+//! prefer to use a `DWT`; `stm32f1xx_hal` even has one, however this example aims to be more general.
 //!
 //! Required features: `embedded_hal_old` or `embedded_hal` with some modifications.
 #![no_std]
@@ -86,6 +86,7 @@ fn main() -> ! {
         cortex_m::peripheral::NVIC::unmask(Interrupt::TIM2);
     }
 
+    let mut led_pin = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
     let button_pin = gpioc.pc15.into_pull_down_input(&mut gpioc.crh);
 
     let config = ButtonConfig {
@@ -98,8 +99,10 @@ fn main() -> ! {
         button.tick();
 
         if button.is_clicked() {
+            led_pin.set_low();
             rprintln!("Click");
         } else if button.is_double_clicked() {
+            led_pin.set_high();
             rprintln!("Double click");
         } else if button.is_triple_clicked() {
             rprintln!("Triple click");
