@@ -89,21 +89,38 @@ pub(crate) mod tests {
             self.pin.release();
             self.tick();
         }
+
+        pub fn hold_button(&mut self) {
+            self.press_button();
+            sleep(CONFIG.hold);
+            self.tick();
+            self.release_button();
+        }
     }
 
     impl MockPin {
+        /// Press the pin with debounce.
         pub fn press(&self) {
             self.0.store(true, Ordering::SeqCst);
             sleep(CONFIG.debounce);
         }
 
+        /// Release the pin with debounce.
         pub fn release(&self) {
             self.0.store(false, Ordering::SeqCst);
             sleep(CONFIG.debounce);
         }
 
+        /// Simulate pin state changes corresponding to one full button click with debounce.
         pub fn click(&self) {
             self.press();
+            self.release();
+        }
+
+        /// Simulate pin state changes corresponding to one full button hold with debounce.
+        pub fn hold(&self) {
+            self.press();
+            sleep(CONFIG.hold);
             self.release();
         }
     }

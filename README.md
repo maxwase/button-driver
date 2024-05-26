@@ -34,16 +34,30 @@ fn main() -> Result<(), EspError> {
     loop {
         button.tick();
 
-        if button.is_clicked() {
-            info!("Click");
-        } else if button.is_double_clicked() {
-            info!("Double click");
-        } else if button.is_triple_clicked() {
-            info!("Triple click");
-        } else if let Some(dur) = button.current_holding_time() {
-            info!("Held for {dur:?}");
-        } else if let Some(dur) = button.held_time() {
-            info!("Total holding time {time:?}");
+        if let Some(dur) = button.held_time() {
+            info!("Total holding time {:?}", dur);
+
+            if button.is_clicked() {
+                info!("Clicked + held");
+            } else if button.is_double_clicked() {
+                info!("Double clicked + held");
+            } else if button.holds() == 2 && button.clicks() > 0 {
+                info!("Held twice with {} clicks", button.clicks());
+            } else if button.holds() == 2 {
+                info!("Held twice");
+            }
+        } else {
+            if button.is_clicked() {
+                led_pin.set_low();
+                info!("Click");
+            } else if button.is_double_clicked() {
+                led_pin.set_high();
+                info!("Double click");
+            } else if button.is_triple_clicked() {
+                info!("Triple click");
+            } else if let Some(dur) = button.current_holding_time() {
+                info!("Held for {:?}", dur);
+            }
         }
 
         button.reset();
@@ -56,6 +70,6 @@ fn main() -> Result<(), EspError> {
 2. Debounce strategies [support](https://github.com/maxwase/button-driver/issues/12)
 
 ## Algorithm
-High level state-machine diagram
+High-level state machine diagram
 
-<img src="https://github.com/maxwase/button-driver/assets/23321756/e066694a-2379-4805-82e5-18e4a3a557de" width=150% height=150%>
+![button-driver-state-machine](https://github.com/maxwase/button-driver/assets/23321756/fd19165a-6107-4a7d-8050-9897afd523c6)
