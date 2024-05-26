@@ -29,6 +29,7 @@ pub struct Button<P, I, D = Duration> {
     state: State<I>,
     clicks: usize,
     held: Option<D>,
+    holds: usize,
     config: ButtonConfig<D>,
 }
 
@@ -105,15 +106,26 @@ where
             config,
             state: State::Unknown,
             clicks: 0,
+            holds: 0,
             held: None,
         }
     }
 
-    /// Returns number of clicks that happened before last release.
+    /// Returns the number of clicks that happened before the last release.
     /// Returns 0 if clicks are still being counted or a new streak has started.
     pub fn clicks(&self) -> usize {
         if self.state == State::Released {
             self.clicks
+        } else {
+            0
+        }
+    }
+
+    /// Returns the number of holds (how many times the button was held) that happened before the last release.
+    /// Returns 0 if clicks or holds are still being counted or a new streak has started.
+    pub fn holds(&self) -> usize {
+        if self.state == State::Released {
+            self.holds
         } else {
             0
         }
@@ -140,6 +152,7 @@ where
     pub fn reset(&mut self) {
         if self.state == State::Released {
             self.clicks = 0;
+            self.holds = 0;
             self.held = None;
         }
     }
@@ -159,10 +172,14 @@ where
         self.clicks() == 3
     }
 
-    /// Returns holing duration before last release.
-    /// Returns [None] if the button is still being held or was not held at all.
+    /// Returns holding duration before the last release.
+    /// Returns [None] if the button is still being held, not released or was not held at all.
     pub fn held_time(&self) -> Option<D> {
-        self.held.clone()
+        if self.state == State::Released {
+            self.held.clone()
+        } else {
+            None
+        }
     }
 
     /// Returns current holding duration.
@@ -176,13 +193,18 @@ where
     }
 
     /// Returns current button state.
-    pub fn raw_state(&self) -> &State<I> {
+    pub const fn raw_state(&self) -> &State<I> {
         &self.state
     }
 
     /// Returns current amount of clicks, ignoring release timeout.
-    pub fn raw_clicks(&self) -> usize {
+    pub const fn raw_clicks(&self) -> usize {
         self.clicks
+    }
+
+    /// Returns current amount of holds (how many times the button was held), ignoring release timeout.
+    pub const fn raw_holds(&self) -> usize {
+        self.holds
     }
 
     /// Updates button state.
@@ -190,7 +212,7 @@ where
     pub fn tick(&mut self) {
         match self.state.clone() {
             State::Unknown if self.is_pin_pressed() => {
-                self.clicks = 1;
+                self.clicks += 1;
                 self.state = State::Down(I::now());
             }
             State::Unknown if self.is_pin_released() => self.state = State::Released,
@@ -209,7 +231,9 @@ where
             State::Pressed(elapsed) => {
                 if self.is_pin_pressed() {
                     if elapsed.elapsed() >= self.config.hold {
-                        self.clicks = 0;
+                        // Do not count a click that leads to a hold
+                        self.clicks -= 1;
+                        self.holds += 1;
                         self.state = State::Held(elapsed.clone());
                     } else {
                         // holding
@@ -232,13 +256,18 @@ where
             }
 
             State::Released if self.is_pin_pressed() => {
-                self.clicks = 1;
+                self.clicks += 1;
                 self.held = None;
                 self.state = State::Down(I::now());
             }
-            State::Held(elapsed) if self.is_pin_released() => {
-                self.held = Some(elapsed.elapsed());
-                self.state = State::Released;
+            State::Held(elapsed) => {
+                if self.is_pin_released() {
+                    // TODO: save prior held time?
+                    self.held = Some(elapsed.elapsed());
+                    self.state = State::Up(I::now());
+                } else {
+                    // holding
+                }
             }
             _ => {}
         }

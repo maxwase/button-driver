@@ -29,7 +29,8 @@ fn test_sequential() {
         button.tick();
         assert!(matches!(button.state, State::Released));
 
-        assert_eq!(button.clicks(), 1)
+        assert_eq!(button.clicks(), 1);
+        button.reset();
     }
 
     // double click
@@ -43,14 +44,37 @@ fn test_sequential() {
         sleep(CONFIG.release);
         button.tick();
 
-        assert_eq!(button.clicks(), 2)
+        assert_eq!(button.clicks(), 2);
+        button.reset();
+    }
+
+    // double hold with clicks
+    {
+        button.press_button();
+        button.release_button();
+
+        button.press_button();
+        button.release_button();
+
+        button.press_button();
+        sleep(CONFIG.hold);
+        button.tick();
+        button.release_button();
+        button.tick();
+
+        button.hold_button();
+
+        sleep(CONFIG.release);
+        button.tick();
+
+        assert_eq!(button.clicks(), 2);
+        assert_eq!(button.holds(), 2);
+        button.reset();
     }
 }
 
-#[test]
-fn test_thread() {
-    let pin = MockPin::default();
-
+/// Start a ticking thread.
+fn prepare_button(pin: &MockPin) -> Arc<Mutex<Button<MockPin, Instant>>> {
     let button = Arc::new(Mutex::new(Button::<_, Instant>::new(pin.clone(), CONFIG)));
 
     let button1 = button.clone();
@@ -59,6 +83,13 @@ fn test_thread() {
     });
 
     sleep(Duration::from_millis(50));
+    button
+}
+
+#[test]
+fn test_thread_clicks() {
+    let pin = MockPin::default();
+    let button = prepare_button(&pin);
 
     // single click
     {
@@ -66,8 +97,9 @@ fn test_thread() {
 
         sleep(CONFIG.release);
 
-        let button = button.lock();
-        assert_eq!(button.clicks(), 1)
+        let mut button = button.lock();
+        assert_eq!(button.clicks(), 1);
+        button.reset()
     }
 
     // double click
@@ -77,42 +109,140 @@ fn test_thread() {
 
         sleep(CONFIG.release);
 
-        let button = button.lock();
+        let mut button = button.lock();
         assert_eq!(button.clicks(), 2);
+        button.reset()
     }
 
     // two single clicks
     {
         pin.click();
         sleep(CONFIG.release);
-        let btn = button.lock();
+        let mut btn = button.lock();
         assert_eq!(btn.clicks(), 1);
+        btn.reset();
         drop(btn);
 
         pin.click();
         sleep(CONFIG.release);
 
-        let button = button.lock();
+        let mut button = button.lock();
         assert_eq!(button.clicks(), 1);
+        button.reset()
     }
+}
+
+#[test]
+fn test_thread_holds() {
+    let pin = MockPin::default();
+    let button = prepare_button(&pin);
 
     // holding
     {
         pin.press();
-        sleep(Duration::from_millis(1));
+        assert_eq!(button.lock().raw_clicks(), 1);
+        sleep(CONFIG.hold);
+        let btn = button.lock();
+        assert_eq!(btn.clicks(), 0);
+        assert_eq!(btn.holds(), 0);
+        assert_eq!(btn.raw_clicks(), 0);
+        assert_eq!(btn.raw_holds(), 1);
+        drop(btn);
+
+        pin.release();
+        sleep(CONFIG.release);
+
+        let mut button = button.lock();
+        assert_eq!(button.clicks(), 0);
+        assert_eq!(button.holds(), 1);
+        assert_eq!(button.state, State::Released);
+        assert!(button.held_time().unwrap() > CONFIG.hold);
+        button.reset()
+    }
+
+    // holds
+    {
+        pin.press();
         assert_eq!(button.lock().raw_clicks(), 1);
         sleep(CONFIG.hold);
         let btn = button.lock();
         assert_eq!(btn.clicks(), 0);
         assert_eq!(btn.raw_clicks(), 0);
         drop(btn);
+        pin.release();
+
+        pin.hold();
+        sleep(CONFIG.release);
+
+        let mut button = button.lock();
+        assert_eq!(button.clicks(), 0);
+        assert_eq!(button.holds(), 2);
+        assert_eq!(button.state, State::Released);
+        assert!(button.held_time().unwrap() > CONFIG.hold);
+        button.reset()
+    }
+}
+
+#[test]
+fn test_thread_clicks_holds() {
+    let pin = MockPin::default();
+    let button = prepare_button(&pin);
+
+    // clicks + holding
+    {
+        pin.click();
+        pin.click();
+        pin.click();
+
+        assert_eq!(button.lock().raw_clicks(), 3);
+
+        pin.press();
+        assert_eq!(button.lock().raw_clicks(), 4);
+        sleep(CONFIG.hold);
+        let btn = button.lock();
+        assert_eq!(btn.clicks(), 0);
+        assert_eq!(btn.raw_clicks(), 3);
+        drop(btn);
 
         pin.release();
         sleep(CONFIG.release);
 
-        let button = button.lock();
-        assert_eq!(button.clicks(), 0);
+        let mut button = button.lock();
+        assert_eq!(button.clicks(), 3);
         assert_eq!(button.state, State::Released);
         assert!(button.held_time().unwrap() > CONFIG.hold);
+        button.reset()
+    }
+
+    // clicks + holds
+    {
+        pin.click();
+        pin.click();
+        pin.click();
+
+        assert_eq!(button.lock().raw_clicks(), 3);
+
+        pin.press();
+        assert_eq!(button.lock().raw_clicks(), 4);
+        sleep(CONFIG.hold);
+        let btn = button.lock();
+        assert_eq!(btn.clicks(), 0);
+        assert_eq!(btn.holds(), 0);
+        assert_eq!(btn.raw_clicks(), 3);
+        assert_eq!(btn.raw_holds(), 1);
+        drop(btn);
+        pin.release();
+
+        pin.hold();
+        pin.hold();
+
+        sleep(CONFIG.release);
+
+        let mut button = button.lock();
+        assert_eq!(button.clicks(), 3);
+        assert_eq!(button.holds(), 3);
+        assert_eq!(button.state, State::Released);
+        assert!(button.held_time().unwrap() > CONFIG.hold);
+        button.reset()
     }
 }
