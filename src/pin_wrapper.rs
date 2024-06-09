@@ -15,14 +15,14 @@ pub trait PinWrapper {
 #[cfg(feature = "esp")]
 impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, Input> {
     fn is_high(&mut self) -> bool {
-        self.is_high()
+        PinDriver::is_high(self)
     }
 }
 
 #[cfg(feature = "esp")]
 impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, InputOutput> {
     fn is_high(&mut self) -> bool {
-        self.is_high()
+        PinDriver::is_high(self)
     }
 }
 
