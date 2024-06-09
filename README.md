@@ -17,19 +17,20 @@ For **ESP32C3** with std:
 
 Required features: `std`, `esp`
 ```rust
+use std::time::Instant;
+
 use button_driver::{Button, ButtonConfig};
 use esp_idf_hal::{gpio::PinDriver, prelude::Peripherals};
 use esp_idf_sys::EspError;
 use log::info;
 
 fn main() -> Result<(), EspError> {
-    esp_idf_sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
 
     let peripherals = Peripherals::take().unwrap();
     let pin = PinDriver::input(peripherals.pins.gpio9)?;
 
-    let mut button = Button::new(pin, ButtonConfig::default());
+    let mut button = Button::<_, Instant>::new(pin, ButtonConfig::default());
 
     loop {
         button.tick();
@@ -48,10 +49,8 @@ fn main() -> Result<(), EspError> {
             }
         } else {
             if button.is_clicked() {
-                led_pin.set_low();
                 info!("Click");
             } else if button.is_double_clicked() {
-                led_pin.set_high();
                 info!("Double click");
             } else if button.is_triple_clicked() {
                 info!("Triple click");
