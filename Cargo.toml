@@ -17,8 +17,6 @@ features = ["std"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-esp-idf-hal = { version = "0.42.5", optional = true }
-embassy-time = { version = "0.3.0", optional = true }
 embedded-hal = { version = "0.2.7", optional = true }
 cfg-if = "1.0.0"
 
@@ -26,7 +24,5 @@ cfg-if = "1.0.0"
 parking_lot = "0.12.1"
 
 [features]
-esp = ["dep:esp-idf-hal"]
-embassy = ["dep:embassy-time"]
 embedded_hal = ["dep:embedded-hal", "embedded-hal/unproven"]
 std = []

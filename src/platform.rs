@@ -9,8 +9,6 @@ pub trait Platform {
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {
         pub use std_platform::DefaultPlatform;
-    } else if #[cfg(feature = "embassy")] {
-        pub use embassy_platform::DefaultPlatform;
     } else {
         pub use unsupported_platform::DefaultPlatform;
     }

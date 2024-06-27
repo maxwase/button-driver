@@ -12,20 +12,6 @@ pub trait PinWrapper {
     }
 }
 
-#[cfg(feature = "esp")]
-impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, Input> {
-    fn is_high(&self) -> bool {
-        self.is_high()
-    }
-}
-
-#[cfg(feature = "esp")]
-impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, InputOutput> {
-    fn is_high(&self) -> bool {
-        self.is_high()
-    }
-}
-
 #[cfg(feature = "embedded_hal")]
 impl<P> PinWrapper for P
 where
