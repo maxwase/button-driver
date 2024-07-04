@@ -6,79 +6,22 @@ pub trait Platform {
     fn duration_since_init(&self) -> Duration;
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "std")] {
-        pub use std_platform::DefaultPlatform;
-    } else {
-        pub use unsupported_platform::DefaultPlatform;
+use std::time::Instant;
+
+pub struct DefaultPlatform {
+    start: Instant,
+}
+
+impl Default for DefaultPlatform {
+    fn default() -> Self {
+        return Self {
+            start: Instant::now(),
+        };
     }
 }
 
-#[cfg(feature = "std")]
-mod std_platform {
-    use core::time::Duration;
-    use std::time::Instant;
-
-    use super::Platform;
-    pub struct DefaultPlatform {
-        start: Instant,
-    }
-
-    impl Default for DefaultPlatform {
-        fn default() -> Self {
-            return Self {
-                start: Instant::now(),
-            };
-        }
-    }
-
-    impl Platform for DefaultPlatform {
-        fn duration_since_init(&self) -> Duration {
-            return Instant::now() - self.start;
-        }
-    }
-}
-
-#[cfg(feature = "embassy")]
-mod embassy_platform {
-    use core::time::Duration;
-    use embassy_time::Instant;
-
-    use super::Platform;
-    pub struct DefaultPlatform {
-        start: Instant,
-    }
-
-    impl Default for DefaultPlatform {
-        fn default() -> Self {
-            return Self {
-                start: Instant::now(),
-            };
-        }
-    }
-
-    impl Platform for DefaultPlatform {
-        fn duration_since_init(&self) -> Duration {
-            return (Instant::now() - self.start).into();
-        }
-    }
-}
-
-mod unsupported_platform {
-    use core::time::Duration;
-
-    use super::Platform;
-    pub struct DefaultPlatform {}
-
-    impl Default for DefaultPlatform {
-        fn default() -> Self {
-            unimplemented!("unsupported platform, you can use Button::new_with_platform() to implement custom platform")
-        }
-    }
-
-    impl Platform for DefaultPlatform {
-        fn duration_since_init(&self) -> Duration {
-            unimplemented!("unsupported platform, you can use Button::new_with_platform() to implement custom platform")
-        }
+impl Platform for DefaultPlatform {
+    fn duration_since_init(&self) -> Duration {
+        return Instant::now() - self.start;
     }
 }
