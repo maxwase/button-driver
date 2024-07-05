@@ -31,3 +31,27 @@ impl InstantProvider<embassy_time::Duration> for embassy_time::Instant {
         embassy_time::Instant::now()
     }
 }
+
+#[cfg(feature = "wasm")]
+/// A wrapper around `js_sys::Date` that implements `InstantProvider`.
+///
+/// This type stores the timestamp as milliseconds since the Unix epoch.
+#[derive(Clone, PartialEq)]
+pub struct JsInstant(f64);
+
+#[cfg(feature = "wasm")]
+impl Sub for JsInstant {
+    type Output = Duration;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let delta_ms = self.0 - rhs.0;
+        Duration::from_millis(delta_ms as u64)
+    }
+}
+
+#[cfg(feature = "wasm")]
+impl InstantProvider<Duration> for JsInstant {
+    fn now() -> Self {
+        JsInstant(js_sys::Date::now())
+    }
+}
