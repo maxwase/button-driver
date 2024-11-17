@@ -1,6 +1,3 @@
-#[cfg(feature = "esp")]
-use esp_idf_hal::gpio::{Input, InputOutput, Pin, PinDriver};
-
 /// An abstraction over different switching APIs.
 pub trait PinWrapper {
     /// Is source on?
@@ -9,20 +6,6 @@ pub trait PinWrapper {
     /// Is source off?
     fn is_low(&mut self) -> bool {
         !self.is_high()
-    }
-}
-
-#[cfg(feature = "esp")]
-impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, Input> {
-    fn is_high(&mut self) -> bool {
-        PinDriver::is_high(self)
-    }
-}
-
-#[cfg(feature = "esp")]
-impl<'d, P: Pin> PinWrapper for PinDriver<'d, P, InputOutput> {
-    fn is_high(&mut self) -> bool {
-        PinDriver::is_high(self)
     }
 }
 

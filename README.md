@@ -15,7 +15,7 @@ You can easily flash them using `cargo run` command!
 
 For **ESP32C3** with std:
 
-Required features: `std`, `esp`
+Required features: `std`, `embedded_hal`
 ```rust
 use std::time::Instant;
 

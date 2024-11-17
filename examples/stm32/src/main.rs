@@ -50,17 +50,11 @@ impl InstantProvider<Duration> for Instant {
 
 #[interrupt]
 fn TIM2() {
-    static mut TIM: Option<CounterMs<TIM2>> = None;
-
-    let tim = TIM.get_or_insert_with(|| {
-        cortex_m::interrupt::free(|cs| {
-            // Move timer here, leaving a None in its place
-            GLOBAL_TIM.borrow(cs).replace(None).unwrap()
-        })
+    cortex_m::interrupt::free(|cs| {
+        let mut tim = GLOBAL_TIM.borrow(cs).borrow_mut();
+        unsafe { GLOBAL_TIMER_COUNTER += TIMER_PERIOD }
+        tim.as_mut().expect("Masked").clear_interrupt(Event::Update);
     });
-
-    cortex_m::interrupt::free(|_| unsafe { GLOBAL_TIMER_COUNTER += TIMER_PERIOD });
-    let _ = tim.wait();
 }
 
 #[cortex_m_rt::entry]
