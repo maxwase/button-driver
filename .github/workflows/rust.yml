@@ -41,4 +41,4 @@ jobs:
       run: cargo clippy -- -D warnings
 
     - name: Tests
-      run: cargo test test --features std
+      run: cargo test tests --features std
