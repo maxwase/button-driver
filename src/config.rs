@@ -7,12 +7,12 @@ pub const DEFAULT_RELEASE: Duration = Duration::from_millis(150);
 /// Default hold time for a button.
 pub const DEFAULT_HOLD: Duration = Duration::from_millis(500);
 
-/// Various [Button] parameters.
+/// Various [Button](crate::Button) parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ButtonConfig<D = Duration> {
     /// How much time the button should be pressed to in order to count it as a press.
     pub debounce: D,
-    /// How much time the button should not be holed to be released.
+    /// How much time the button should not be held to be released.
     pub release: D,
     /// How much time the button should be pressed to be held.
     pub hold: D,

@@ -59,6 +59,7 @@ pub(crate) mod tests {
     }
 
     impl Button<MockPin, Instant> {
+        /// Simulate pin state changes corresponding to one full button click with debounce.
         pub fn press_button(&mut self) {
             self.pin.press();
             self.tick();
@@ -68,11 +69,13 @@ pub(crate) mod tests {
             self.tick();
         }
 
+        /// Simulate pin state changes corresponding to one full button release with debounce.
         pub fn release_button(&mut self) {
             self.pin.release();
             self.tick();
         }
 
+        /// Simulate pin state changes corresponding to one full button hold with debounce.
         pub fn hold_button(&mut self) {
             self.press_button();
             sleep(CONFIG.hold);
