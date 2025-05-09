@@ -1,6 +1,6 @@
 [package]
 name = "button-driver"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["maxwase", "Max T <max.vvase@gmail.com>"]
 description = "Advanced button handling crate"
