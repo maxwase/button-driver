@@ -1,6 +1,6 @@
 [package]
 name = "button-driver"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 authors = ["maxwase", "Max T <max.vvase@gmail.com>"]
 description = "Advanced button handling crate"
@@ -17,12 +17,12 @@ features = ["std"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-embassy-time = { version = "0.4.0", optional = true }
+embassy-time = { version = "0.5.0", optional = true }
 embedded-hal-old = { package = "embedded-hal", version = "0.2.7", optional = true }
 embedded-hal = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
-parking_lot = "0.12.3"
+parking_lot = "0.12.4"
 
 [features]
 embassy = ["dep:embassy-time"]
