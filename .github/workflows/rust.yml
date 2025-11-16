@@ -27,11 +27,15 @@ jobs:
       run: |
         cargo clippy --features embedded_hal -- -D warnings
         cargo clippy --features embedded_hal_old -- -D warnings
+    - name: Clippy wasm
+      run: cargo clippy --features wasm -- -D warnings
     - name: Clippy default
       run: cargo clippy --no-default-features -- -D warnings
 
     - name: Install dependencies
-      run: rustup target add thumbv7m-none-eabi
+      run: |
+        rustup target add thumbv7m-none-eabi
+        rustup target add wasm32-unknown-unknown
 
     - name: Clippy example stm32
       working-directory: examples/stm32
@@ -39,6 +43,9 @@ jobs:
     - name: Clippy example stm32-embassy
       working-directory: examples/stm32-embassy
       run: cargo clippy -- -D warnings
+    - name: Build example wasm
+      working-directory: examples/wasm
+      run: cargo build --target wasm32-unknown-unknown --release
 
     - name: Tests
       run: cargo test tests --features std
