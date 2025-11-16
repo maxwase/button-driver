@@ -4,14 +4,14 @@ Button driver
 [![doc](https://img.shields.io/docsrs/button-driver?style=for-the-badge)](https://docs.rs/button-driver/latest/)
 
 This crate is a button driver for embedded Rust projects.
-It offers various usage scenarios, supports ESP, `embedded_hal`, `embassy` and `no_std` targets.
+It offers various usage scenarios, supports ESP, `embedded_hal`, `embassy`, `wasm` and `no_std` targets.
 
 This crate aims to be as flexible as possible to support various HALs and use-cases.
 
 ## Examples
 
 For more examples consider looking into the [examples](https://github.com/maxwase/button-driver/tree/master/examples) folder.
-You can easily flash them using `cargo run` command!
+You can easily flash/rub them using `cargo run` command! Use `trunk serve` to run the wasm example.
 
 For **ESP32C3** with std:
 
