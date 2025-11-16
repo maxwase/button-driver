@@ -11,7 +11,7 @@ This crate aims to be as flexible as possible to support various HALs and use-ca
 ## Examples
 
 For more examples consider looking into the [examples](https://github.com/maxwase/button-driver/tree/master/examples) folder.
-You can easily flash/rub them using `cargo run` command! Use `trunk serve` to run the wasm example.
+You can easily flash/run them using `cargo run` command! Use `trunk serve` to run the wasm example.
 
 For **ESP32C3** with std:
 

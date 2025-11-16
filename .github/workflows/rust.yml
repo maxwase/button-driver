@@ -19,7 +19,7 @@ jobs:
     - name: Format
       run: cargo fmt --check
 
-    - name: Clippy first
+    - name: Clippy common
       run: cargo clippy --features std,wasm,embassy,embedded_hal --tests -- -D warnings
     - name: Clippy embedded_hal_old
       run: cargo clippy --features embedded_hal_old -- -D warnings

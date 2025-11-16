@@ -1,5 +1,5 @@
 //! A WebAssembly example demonstrating button driver usage in the browser.
-//! This example uses the built-in [instant::wasm::Instant] type which wraps `js_sys::Date::now()`.
+//! This example uses the built-in [button_driver::instant::wasm::Instant] type which wraps `js_sys::Date::now()`.
 //!
 //! To run this example:
 //! 1. Install trunk: `cargo install trunk`

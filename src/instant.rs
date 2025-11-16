@@ -51,8 +51,11 @@ pub mod wasm {
         type Output = Duration;
 
         fn sub(self, rhs: Self) -> Self::Output {
+            // Instant should be monotonic, so self.0 >= rhs.0
             let delta_ms = self.0 - rhs.0;
-            Duration::from_millis(delta_ms as u64)
+            let millis = delta_ms.trunc() as u64;
+            let micros = (delta_ms.fract() * 1000.0) as u64;
+            Duration::from_millis(millis) + Duration::from_micros(micros)
         }
     }
 
