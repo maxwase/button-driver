@@ -19,17 +19,11 @@ jobs:
     - name: Format
       run: cargo fmt --check
 
-    - name: Clippy std
-      run: cargo clippy --features std --tests -- -D warnings
-    - name: Clippy embassy
-      run: cargo clippy --features embassy -- -D warnings
-    - name: Clippy embedded_hal
-      run: |
-        cargo clippy --features embedded_hal -- -D warnings
-        cargo clippy --features embedded_hal_old -- -D warnings
-    - name: Clippy wasm
-      run: cargo clippy --features wasm -- -D warnings
-    - name: Clippy default
+    - name: Clippy common
+      run: cargo clippy --features std,wasm,embassy,embedded_hal --tests -- -D warnings
+    - name: Clippy embedded_hal_old
+      run: cargo clippy --features embedded_hal_old -- -D warnings
+    - name: Clippy no default
       run: cargo clippy --no-default-features -- -D warnings
 
     - name: Install dependencies
@@ -45,7 +39,7 @@ jobs:
       run: cargo clippy -- -D warnings
     - name: Build example wasm
       working-directory: examples/wasm
-      run: cargo build --target wasm32-unknown-unknown --release
+      run: cargo build --target wasm32-unknown-unknown
 
     - name: Tests
       run: cargo test tests --features std

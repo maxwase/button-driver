@@ -8,9 +8,6 @@ pub use config::{ButtonConfig, Mode};
 pub use instant::InstantProvider;
 pub use pin_wrapper::PinWrapper;
 
-#[cfg(feature = "wasm")]
-pub use instant::JsInstant;
-
 /// Button configuration.
 pub mod config;
 /// Different current global time sources.

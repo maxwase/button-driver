@@ -1,6 +1,6 @@
 [package]
 name = "button-driver"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 authors = ["maxwase", "Max T <max.vvase@gmail.com>"]
 description = "Advanced button handling crate"
@@ -12,7 +12,7 @@ readme = "README.md"
 exclude = [".*"]
 
 [package.metadata.docs.rs]
-features = ["std"]
+features = ["std", "embassy", "embedded_hal", "wasm"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,7 +20,7 @@ features = ["std"]
 embassy-time = { version = "0.5.0", optional = true }
 embedded-hal-old = { package = "embedded-hal", version = "0.2.7", optional = true }
 embedded-hal = { version = "1.0.0", optional = true }
-js-sys = { version = "0.3", optional = true }
+js-sys = { version = "0.3", default-features = false, optional = true }
 
 [dev-dependencies]
 parking_lot = "0.12.4"
@@ -32,4 +32,4 @@ embedded_hal_old = ["dep:embedded-hal-old", "embedded-hal-old/unproven"]
 esp = ["dep:embedded-hal"]
 embedded_hal = ["dep:embedded-hal"]
 std = []
-wasm = ["dep:js-sys", "std"]
+wasm = ["dep:js-sys"]
