@@ -12,7 +12,7 @@ readme = "README.md"
 exclude = [".*"]
 
 [package.metadata.docs.rs]
-features = ["std"]
+features = ["std", "embassy", "embedded_hal", "wasm"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,16 +1,16 @@
 //! A WebAssembly example demonstrating button driver usage in the browser.
-//! This example uses the built-in `JsInstant` type which wraps `js_sys::Date::now()`.
+//! This example uses the built-in [instant::wasm::Instant] type which wraps `js_sys::Date::now()`.
 //!
 //! To run this example:
 //! 1. Install trunk: `cargo install trunk`
 //! 2. Run: `trunk serve`
 //! 3. Open your browser at `http://localhost:8080`
 //!
-//! Required features: `wasm` (which includes `std` and `js-sys`).
+//! Required features: `wasm`.
 
 use std::{cell::RefCell, rc::Rc};
 
-use button_driver::{Button, ButtonConfig, JsInstant, Mode, PinWrapper};
+use button_driver::{instant::wasm::Instant, Button, ButtonConfig, Mode, PinWrapper};
 use log::info;
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::MouseEvent;
@@ -27,9 +27,12 @@ impl PinWrapper for ButtonInput {
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
+
     let document = web_sys::window().unwrap().document().unwrap();
     let clickable_area = document.query_selector(".clickable-area").unwrap().unwrap();
+
     let pin_state = ButtonInput::default();
+
     {
         let pin_state_ref = pin_state.clone();
         let mouse_down_handler = Closure::wrap(Box::new(move |_: MouseEvent| {
@@ -43,6 +46,7 @@ pub fn main() {
             .unwrap();
         mouse_down_handler.forget();
     }
+
     {
         let pin_state_ref = pin_state.clone();
         let mouse_up_handler = Closure::wrap(Box::new(move |_: MouseEvent| {
@@ -54,8 +58,9 @@ pub fn main() {
             .unwrap();
         mouse_up_handler.forget();
     }
+
     {
-        let mut button = Button::<_, JsInstant>::new(
+        let mut button = Button::<_, Instant>::new(
             pin_state,
             ButtonConfig {
                 mode: Mode::PullDown,
