@@ -7,7 +7,20 @@ pub trait PinWrapper {
     fn is_low(&mut self) -> bool {
         !self.is_high()
     }
+
+    /// Is source on? Returns [None] if the source cannot be read.
+    ///
+    /// [Button::tick](crate::Button::tick) skips the update when this returns [None],
+    /// so a failing pin is never interpreted as a press or a release.
+    fn try_is_high(&mut self) -> Option<bool> {
+        Some(self.is_high())
+    }
 }
+
+#[cfg(all(feature = "embedded_hal_old", feature = "embedded_hal"))]
+compile_error!(
+    "features `embedded_hal_old` and `embedded_hal` (or `esp`) are mutually exclusive: enable only one"
+);
 
 #[cfg(feature = "embedded_hal_old")]
 impl<P> PinWrapper for P
@@ -16,6 +29,10 @@ where
 {
     fn is_high(&mut self) -> bool {
         embedded_hal_old::digital::v2::InputPin::is_high(self).unwrap_or_default()
+    }
+
+    fn try_is_high(&mut self) -> Option<bool> {
+        embedded_hal_old::digital::v2::InputPin::is_high(self).ok()
     }
 }
 
@@ -26,6 +43,10 @@ where
 {
     fn is_high(&mut self) -> bool {
         embedded_hal::digital::InputPin::is_high(self).unwrap_or_default()
+    }
+
+    fn try_is_high(&mut self) -> Option<bool> {
+        embedded_hal::digital::InputPin::is_high(self).ok()
     }
 }
 
@@ -72,6 +93,9 @@ pub(crate) mod tests {
         /// Simulate pin state changes corresponding to one full button release with debounce.
         pub fn release_button(&mut self) {
             self.pin.release();
+            self.tick();
+
+            sleep(CONFIG.debounce);
             self.tick();
         }
 

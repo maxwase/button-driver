@@ -23,7 +23,7 @@ pub struct ButtonConfig<D = Duration> {
 impl<D> ButtonConfig<D> {
     /// Returns new [ButtonConfig].
     ///
-    /// As a general rule, `debounce` time is less then `release` time and `hold` time is larger them both.
+    /// As a general rule, `debounce` time is less than `release` time and `hold` time is larger than both.
     pub fn new(debounce: D, release: D, hold: D, mode: Mode) -> Self {
         Self {
             debounce,
