@@ -22,6 +22,12 @@ mod tests;
 ///
 /// The crate is designed to provide a finished ([`released`](ButtonConfig#structfield.release)) state by the accessor methods.
 /// However, it is also possible to get the `raw` state using the corresponding methods.
+///
+/// A click is counted when a debounced press is released before the hold time;
+/// a hold is counted when the press lasts for the hold time. A new streak starts
+/// (and the counters are cleared) on the first debounced press after the release timeout.
+/// Finished results are only visible while the button is in the [Released](State::Released) state,
+/// so poll them before the next press.
 #[derive(Clone, Debug)]
 pub struct Button<P, I, D = Duration> {
     /// An inner pin.
@@ -31,6 +37,11 @@ pub struct Button<P, I, D = Duration> {
     held: Option<D>,
     holds: usize,
     config: ButtonConfig<D>,
+    /// Start of the last debounced release within the current streak.
+    /// [None] when the button is idle, used to tell a new streak from a continued one.
+    release_at: Option<I>,
+    /// Start of a release that is still being debounced.
+    release_pending: Option<I>,
 }
 
 /// Represents current button state.
@@ -38,10 +49,10 @@ pub struct Button<P, I, D = Duration> {
 ///
 /// State machine diagram:
 ///```ignore
-/// Down => Pressed | Released
-/// Pressed => Held => Up
+/// Down => Pressed | Released | Up (bounce, back to the previous state)
+/// Pressed => Held | Up
+/// Held => Up
 /// Up => Released | Down
-/// Held => Released
 /// Released => Down
 /// Unknown => Down | Released
 /// ```
@@ -108,6 +119,8 @@ where
             clicks: 0,
             holds: 0,
             held: None,
+            release_at: None,
+            release_pending: None,
         }
     }
 
@@ -172,7 +185,7 @@ where
         self.clicks() == 3
     }
 
-    /// Returns holding duration before the last release.
+    /// Returns holding duration of the last hold in the streak, measured from the press to the release.
     /// Returns [None] if the button is still being held, not released or was not held at all.
     pub fn held_time(&self) -> Option<D> {
         if self.state == State::Released {
@@ -208,78 +221,107 @@ where
     }
 
     /// Updates button state.
-    /// Call as frequently as you can, ideally in a loop in separate thread or interrupt.
+    /// Call as frequently as you can, ideally in a loop in separate thread or a **periodic** timer interrupt,
+    /// with a period well below [`debounce`](ButtonConfig#structfield.debounce).
+    /// Do not call it only from a pin-change (edge) interrupt: debounce, hold and release
+    /// timeouts advance only when `tick` runs, so the button would get stuck between edges.
+    ///
+    /// Both press and release edges are debounced: the pin must stay at the new level
+    /// for at least [`debounce`](ButtonConfig#structfield.debounce) before the transition is accepted.
+    /// If the pin cannot be read (see [`PinWrapper::try_is_high`]), the tick is skipped.
     pub fn tick(&mut self) {
-        match self.state.clone() {
-            State::Unknown if self.is_pin_pressed() => {
-                self.clicks += 1;
-                self.state = State::Down(I::now());
-            }
-            State::Unknown if self.is_pin_released() => self.state = State::Released,
+        let Some(pressed) = self.read_pin_pressed() else {
+            return;
+        };
 
-            State::Down(elapsed) => {
-                if self.is_pin_pressed() {
-                    if elapsed.elapsed() >= self.config.debounce {
-                        self.state = State::Pressed(elapsed.clone());
+        match self.state.clone() {
+            State::Unknown | State::Released => {
+                self.state = if pressed {
+                    State::Down(I::now())
+                } else {
+                    State::Released
+                };
+            }
+
+            State::Down(start) => {
+                if pressed {
+                    if start.elapsed() >= self.config.debounce {
+                        if self.release_at.is_none() {
+                            // First debounced press after an idle period: start a new streak.
+                            self.clicks = 0;
+                            self.holds = 0;
+                            self.held = None;
+                        }
+                        self.release_pending = None;
+                        self.state = State::Pressed(start);
                     } else {
                         // debounce
                     }
                 } else {
-                    self.state = State::Released;
+                    // Bounce: return to the state we came from without counting anything.
+                    self.state = match &self.release_at {
+                        Some(released) => State::Up(released.clone()),
+                        None => State::Released,
+                    };
                 }
             }
-            State::Pressed(elapsed) => {
-                if self.is_pin_pressed() {
-                    if elapsed.elapsed() >= self.config.hold {
-                        // Do not count a click that leads to a hold
-                        self.clicks -= 1;
+
+            State::Pressed(start) => {
+                if pressed {
+                    self.release_pending = None;
+                    if start.elapsed() >= self.config.hold {
                         self.holds += 1;
-                        self.state = State::Held(elapsed.clone());
+                        self.state = State::Held(start);
                     } else {
                         // holding
                     }
-                } else {
-                    self.state = State::Up(I::now())
-                }
-            }
-            State::Up(elapsed) => {
-                if elapsed.elapsed() < self.config.release {
-                    if self.is_pin_pressed() {
-                        self.clicks += 1;
-                        self.state = State::Down(I::now());
-                    } else {
-                        // waiting for the release timeout
-                    }
-                } else {
-                    self.state = State::Released;
+                } else if let Some(released) = self.debounced_release() {
+                    self.clicks += 1;
+                    self.release_at = Some(released.clone());
+                    self.state = State::Up(released);
                 }
             }
 
-            State::Released if self.is_pin_pressed() => {
-                self.clicks += 1;
-                self.held = None;
-                self.state = State::Down(I::now());
-            }
-            State::Held(elapsed) => {
-                if self.is_pin_released() {
-                    // TODO: save prior held time?
-                    self.held = Some(elapsed.elapsed());
-                    self.state = State::Up(I::now());
-                } else {
-                    // holding
+            State::Held(start) => {
+                if pressed {
+                    self.release_pending = None;
+                } else if let Some(released) = self.debounced_release() {
+                    self.held = Some(released.clone() - start);
+                    self.release_at = Some(released.clone());
+                    self.state = State::Up(released);
                 }
             }
-            _ => {}
+
+            State::Up(released) => {
+                if released.elapsed() >= self.config.release {
+                    self.release_at = None;
+                    self.state = State::Released;
+                } else if pressed {
+                    self.state = State::Down(I::now());
+                } else {
+                    // waiting for the release timeout
+                }
+            }
         }
     }
 
-    /// Reads current pin status, returns [true] if the button pin is released without debouncing.
-    fn is_pin_released(&mut self) -> bool {
-        self.pin.is_high() == self.config.mode.is_pullup()
+    /// Tracks a pending release while the button is pressed or held.
+    ///
+    /// Returns the instant the release started once the pin has stayed released
+    /// for at least the debounce time.
+    fn debounced_release(&mut self) -> Option<I> {
+        let since = self.release_pending.get_or_insert_with(I::now);
+        if since.elapsed() >= self.config.debounce {
+            self.release_pending.take()
+        } else {
+            None
+        }
     }
 
-    /// Reads current pin status, returns [true] if the button pin is pressed without debouncing.
-    fn is_pin_pressed(&mut self) -> bool {
-        !self.is_pin_released()
+    /// Reads current pin status without debouncing.
+    /// Returns [None] if the pin cannot be read, otherwise [true] if the button is pressed.
+    fn read_pin_pressed(&mut self) -> Option<bool> {
+        let is_high = self.pin.try_is_high()?;
+        Some(is_high != self.config.mode.is_pullup())
     }
 }

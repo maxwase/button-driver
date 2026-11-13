@@ -17,13 +17,14 @@ features = ["std", "embassy", "embedded_hal", "wasm"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-embassy-time = { version = "0.5.0", optional = true }
+embassy-time = { version = "0.5.1", optional = true }
 embedded-hal-old = { package = "embedded-hal", version = "0.2.7", optional = true }
 embedded-hal = { version = "1.0.0", optional = true }
-js-sys = { version = "0.3", default-features = false, optional = true }
+js-sys = { version = "0.3.107", default-features = false, optional = true }
+wasm-bindgen = { version = "0.2.130", default-features = false, optional = true }
 
 [dev-dependencies]
-parking_lot = "0.12.4"
+parking_lot = "0.13.0"
 
 [features]
 embassy = ["dep:embassy-time"]
@@ -32,4 +33,4 @@ embedded_hal_old = ["dep:embedded-hal-old", "embedded-hal-old/unproven"]
 esp = ["dep:embedded-hal"]
 embedded_hal = ["dep:embedded-hal"]
 std = []
-wasm = ["dep:js-sys"]
+wasm = ["dep:js-sys", "dep:wasm-bindgen"]
